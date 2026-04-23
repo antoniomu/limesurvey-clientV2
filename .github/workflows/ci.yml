@@ -1,0 +1,48 @@
+name: CI (Test + IT)
+
+# This file should be moved to .github/workflows/ci.yml in your GitHub repository.
+# It runs mvn verify (includes integration tests via Failsafe and Testcontainers).
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '21'
+
+    - name: Cache local Maven repository
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2-
+
+    - name: Build and run tests (including integration)
+      run: mvn -U -B verify
+
+    - name: Upload surefire reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: surefire-reports
+        path: target/surefire-reports/
+
+    - name: Upload failsafe reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: failsafe-reports
+        path: target/failsafe-reports/

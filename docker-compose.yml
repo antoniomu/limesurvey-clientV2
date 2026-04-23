@@ -1,0 +1,41 @@
+services:
+  limesurvey:
+    image: martialblog/limesurvey:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_TYPE=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=limesurvey
+      - DB_USERNAME=limesurvey
+      - DB_PASSWORD=limesurvey
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=password
+      - ADMIN_NAME=Administrator
+      - ADMIN_EMAIL=admin@example.com
+      - PUBLIC_URL=http://localhost:8080
+      - REMOTECONTROL_ENABLE=true
+      - REMOTECONTROL_JSON_RPC=true
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/admin/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=limesurvey
+      - MYSQL_USER=limesurvey
+      - MYSQL_PASSWORD=limesurvey
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "limesurvey", "-plimesurvey"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
