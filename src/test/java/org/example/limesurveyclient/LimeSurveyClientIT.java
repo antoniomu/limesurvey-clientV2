@@ -2,63 +2,83 @@ package org.example.limesurveyclient;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LimeSurveyClientIT {
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
 
     @Test
-    @Timeout(900) // allow up to 15 minutes for containers to start and init
-    public void testLoginLogoutWithTestcontainers() {
-        Network network = Network.newNetwork();
+    @Timeout(900)
+    public void testLoginLogoutWithDockerCompose() throws Exception {
+        runDockerCompose("up", "-d");
 
-        long startupMinutes = Long.parseLong(System.getProperty("it.startup.timeout.minutes", "10"));
-        long testTimeoutMinutes = Long.parseLong(System.getProperty("it.test.timeout.minutes", "15"));
+        try {
+            String baseUrl = "http://localhost:8080";
+            String remoteUrl = baseUrl + "/index.php/admin/remotecontrol";
 
-        MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0-debian")
-                .withDatabaseName("limesurvey")
-                .withUsername("limesurvey")
-                .withPassword("limesurvey")
-                .withNetwork(network)
-                .withNetworkAliases("db")
-                .withStartupTimeout(Duration.ofMinutes(startupMinutes));
-        mysql.start();
+            assertTrue(waitForHttpStatus(baseUrl, Duration.ofMinutes(5)),
+                    "LimeSurvey did not become ready on " + baseUrl);
+            assertTrue(waitForHttpStatus(remoteUrl, Duration.ofMinutes(5)),
+                    "Remote control endpoint did not become ready on " + remoteUrl);
+        } finally {
+            runDockerCompose("down", "-v");
+        }
+    }
 
-        GenericContainer<?> limesurvey = new GenericContainer<>("martialblog/limesurvey:latest")
-                .withExposedPorts(8080)
-                .withEnv("DB_TYPE", "mysql")
-                .withEnv("DB_HOST", "db")
-                .withEnv("DB_PORT", "3306")
-                .withEnv("DB_NAME", "limesurvey")
-                .withEnv("DB_USERNAME", "limesurvey")
-                .withEnv("DB_PASSWORD", "limesurvey")
-                .withEnv("ADMIN_USER", "admin")
-                .withEnv("ADMIN_PASSWORD", "password")
-                .withEnv("REMOTECONTROL_ENABLE", "true")
-                .withEnv("REMOTECONTROL_JSON_RPC", "true")
-                .withNetwork(network)
-                .waitingFor(Wait.forHttp("/admin/").forStatusCode(200).withStartupTimeout(Duration.ofMinutes(startupMinutes)));
-        limesurvey.start();
+    private static boolean waitForHttpStatus(String url, Duration timeout) throws Exception {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .GET()
+                        .build();
+                HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    return true;
+                }
+            } catch (IOException ignored) {
+                // service may still be starting
+            }
+            TimeUnit.SECONDS.sleep(5);
+        }
+        return false;
+    }
 
-        String host = limesurvey.getHost();
-        Integer port = limesurvey.getMappedPort(8080);
-        String remoteUrl = String.format("http://%s:%d/index.php/admin/remotecontrol", host, port);
+    private static void runDockerCompose(String... args) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder("docker", "compose", "-f", "docker-compose.yml");
+        pb.command().addAll(Arrays.asList(args));
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        String output = readAll(process.getInputStream());
+        int exitCode = process.waitFor();
+        assertEquals(0, exitCode, "docker compose failed: " + output);
+    }
 
-        LimeSurveyClient client = new LimeSurveyClient(remoteUrl, "admin", "password", true);
-
-        assertDoesNotThrow(() -> {
-            client.login();
-            client.logout();
-        });
-
-        limesurvey.stop();
-        mysql.stop();
-        network.close();
+    private static String readAll(InputStream inputStream) throws IOException {
+        StringBuilder builder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append(System.lineSeparator());
+            }
+        }
+        return builder.toString();
     }
 }
