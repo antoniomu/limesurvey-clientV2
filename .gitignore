@@ -3,17 +3,9 @@ target/
 .idea/
 *.iml
 
-# Docker volumes and data
-limesurvey-db-data/
-limesurvey-upload/
-limesurvey-config/
-
-# Environment files (keep .env.example)
+# Environment files
 .env
 .env.local
-
-# Docker-related
-docker-compose.override.yml
 
 # IDE
 .vscode/

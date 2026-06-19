@@ -4,43 +4,8 @@ Proyecto: Cliente Java para la API RemoteControl de LimeSurvey.
 
 ## Requisitos
 
-- Java 21, Maven
-- Docker y Docker Compose (para tests con LimeSurvey)
-
-## 🐳 Docker Setup (RECOMENDADO PARA TESTS)
-
-Para desarrollo y testing con LimeSurvey:
-
-### Inicio Rápido
-
-**Windows:**
-```bash
-limesurvey.bat start
-```
-
-**Linux/Mac:**
-```bash
-./limesurvey.sh start
-```
-
-Acceso: http://localhost
-- Usuario: `admin`
-- Contraseña: `admin123`
-
-### Documentación
-
-- **QUICKSTART.md** → Inicio en 30 segundos
-- **DOCKER.md** → Guía completa
-- **DOCKER_ADVANCED.md** → Configuraciones avanzadas
-
-### Comandos principales
-
-```bash
-./limesurvey.sh start              # Inicia stack
-./limesurvey.sh test:all           # Ejecuta todos los tests
-./limesurvey.sh version 7          # Cambia a LimeSurvey v7
-./limesurvey.sh help               # Ayuda completa
-```
+- Java 21
+- Maven
 
 ## Build
 
@@ -134,17 +99,12 @@ mvn -DskipTests=false -Dtest=*Test test
 mvn verify
 ```
 
-### Docker (Recommended)
+### Pruebas de integración
 
-```bash
-./limesurvey.sh test:all
-```
-
-See **DOCKER.md** for details.
+Las pruebas de integración se ejecutan con Testcontainers mediante Maven Failsafe.
 
 ## CI / Recomendaciones
 
 - Las pruebas de integración usan Testcontainers y están gestionadas por Failsafe.
 - Ajustar timeouts en pom.xml para entornos CI lentos.
 - Considerar publicar artefacto en un repositorio Maven para reutilización.
-- Para Docker: usar docker-compose para tests locales y CI/CD

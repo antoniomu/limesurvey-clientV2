@@ -1,68 +1,30 @@
-# Quick Start Guide - LimeSurvey Testing
+# Quick Start Guide
 
-## ⚡ Comando Rápido (30 segundos)
+## ⚡ Requisitos previos
 
-**Windows:**
-```
-limesurvey.bat start
-```
+- Java 21
+- Maven 3.9+
 
-**Linux/Mac:**
-```
-./limesurvey.sh start
-```
-
-Luego accede a: **http://localhost**
-- Usuario: `admin`
-- Contraseña: `admin123`
-
----
-
-## 🧪 Ejecutar Tests (60 segundos)
+## 🛠️ Compilar el proyecto
 
 ```bash
-# Terminal 1: Inicia LimeSurvey
-./limesurvey.sh start
-
-# Terminal 2: Ejecuta tests
-./limesurvey.sh test:all
-
-# Detener
-./limesurvey.sh stop
+mvn clean package
 ```
 
----
-
-## 📌 Cambiar a LimeSurvey v7
+## 🧪 Ejecutar pruebas
 
 ```bash
-./limesurvey.sh version 7
-./limesurvey.sh stop
-./limesurvey.sh start
+mvn test
+mvn verify
 ```
 
----
-
-## 📖 Documentación Completa
-
-Ver: **DOCKER.md**
+## ▶️ Ejecutar el ejemplo
 
 ```bash
-# Ver toda la ayuda
-./limesurvey.sh help
+java -jar target/limesurvey-clientV2-0.1.0-shaded.jar
 ```
 
----
+## 📌 Notas adicionales
 
-## ⚠️ Requisitos Previos
-
-✅ Docker instalado  
-✅ Docker Compose instalado  
-✅ Maven 3.9+ (para tests)  
-✅ Java 21 (para tests)
-
-[Instalar Docker](https://docs.docker.com/get-docker/)
-
----
-
-**¿Problemas?** Ver sección de Troubleshooting en DOCKER.md
+- Las pruebas de integración se ejecutan con Testcontainers.
+- Si necesitas ajustar la configuración de Maven o las pruebas, revisa el archivo [pom.xml](pom.xml).
