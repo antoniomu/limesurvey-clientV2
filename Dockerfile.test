@@ -1,0 +1,17 @@
+# Dockerfile for running tests against LimeSurvey
+# Usage: docker build -f Dockerfile.test -t limesurvey-client-tests .
+#        docker run --network limesurvey-clientv2_default limesurvey-client-tests
+
+FROM maven:3.9-eclipse-temurin-21
+
+WORKDIR /app
+
+# Copy pom.xml and download dependencies
+COPY pom.xml .
+RUN mvn dependency:resolve
+
+# Copy source code
+COPY src src
+
+# Run integration tests (expects LimeSurvey to be available via docker-compose)
+CMD ["mvn", "verify", "-DskipUnitTests=false"]

@@ -1,63 +1,150 @@
-LimeSurvey RemoteControl Java Client
+# LimeSurvey RemoteControl Java Client
 
 Proyecto: Cliente Java para la API RemoteControl de LimeSurvey.
 
-Requisitos:
+## Requisitos
+
 - Java 21, Maven
+- Docker y Docker Compose (para tests con LimeSurvey)
 
-Build
-- mvn -DskipTests package
+## 🐳 Docker Setup (RECOMENDADO PARA TESTS)
 
-Run example JAR
-- The shade plugin sets the main class to org.example.limesurveyclient.examples.ExampleUsage
-- Run: java -jar target/limesurvey-clientV2-0.1.0-shaded.jar
+Para desarrollo y testing con LimeSurvey:
 
-Usage (example snippets)
-- Basic (autoReleaseSession = true): methods will login and automatically release the session after each RPC.
+### Inicio Rápido
 
-    LimeSurveyClient client = new LimeSurveyClient(url, user, pass);
-    client.copySurvey(1, "Copy of survey");
+**Windows:**
+```bash
+limesurvey.bat start
+```
 
-- Web-backend / reuse session (autoReleaseSession = false): login once, reuse session across requests, logout when done.
+**Linux/Mac:**
+```bash
+./limesurvey.sh start
+```
 
-    LimeSurveyClient shared = new LimeSurveyClient(url, user, pass, false);
-    try {
-n        shared.login();
-        shared.getSurveyProperties(1, List.of("title"));
-    } finally {
-        shared.logout();
-    }
+Acceso: http://localhost
+- Usuario: `admin`
+- Contraseña: `admin123`
 
-autoReleaseSession flag
-- Default: true. Each API call will automatically call logout() after completion when pooling is disabled.
-- Set to false to keep session keys across multiple calls (recommended for web backends to avoid repeated logins).
+### Documentación
 
-Connection pooling and concurrency
-- The client supports an optional session pool and concurrency limit. Construct with:
+- **QUICKSTART.md** → Inicio en 30 segundos
+- **DOCKER.md** → Guía completa
+- **DOCKER_ADVANCED.md** → Configuraciones avanzadas
 
-  LimeSurveyClient client = new LimeSurveyClient(url, user, pass, autoReleaseSession, sessionPoolSize, maxConcurrentRequests);
+### Comandos principales
 
-  * sessionPoolSize = number of pooled session keys (0 disables pooling).
-  * maxConcurrentRequests = maximum concurrent RPC calls allowed (useful to protect LimeSurvey or network).
+```bash
+./limesurvey.sh start              # Inicia stack
+./limesurvey.sh test:all           # Ejecuta todos los tests
+./limesurvey.sh version 7          # Cambia a LimeSurvey v7
+./limesurvey.sh help               # Ayuda completa
+```
 
-- Example for backend reuse: new LimeSurveyClient(url, user, pass, false, 5, 10) — keeps up to 5 pooled sessions and allows 10 concurrent requests.
-- Call client.close() to release pooled sessions (they will call release_session_key against the server).
-- When pooling is enabled and autoReleaseSession=false, sessions are returned to the pool for reuse. If autoReleaseSession=true and pooling enabled, sessions are invalidated after each use.
+## Build
 
-Notes for web backends
-- Create one shared LimeSurveyClient per host+credentials with pooling enabled and autoReleaseSession=false for best throughput.
+```bash
+mvn -DskipTests package
+```
+
+## Run example JAR
+
+The shade plugin sets the main class to `org.example.limesurveyclient.examples.ExampleUsage`
+
+```bash
+java -jar target/limesurvey-clientV2-0.1.0-shaded.jar
+```
+
+## Usage
+
+### Basic (autoReleaseSession = true)
+
+Methods will login and automatically release the session after each RPC.
+
+```java
+LimeSurveyClient client = new LimeSurveyClient(url, user, pass);
+client.copySurvey(1, "Copy of survey");
+```
+
+### Web-backend / reuse session (autoReleaseSession = false)
+
+Login once, reuse session across requests, logout when done.
+
+```java
+LimeSurveyClient shared = new LimeSurveyClient(url, user, pass, false);
+try {
+    shared.login();
+    shared.getSurveyProperties(1, List.of("title"));
+} finally {
+    shared.logout();
+}
+```
+
+### autoReleaseSession flag
+
+- **Default: true** - Each API call will automatically call logout() after completion when pooling is disabled.
+- **Set to false** - Keep session keys across multiple calls (recommended for web backends to avoid repeated logins).
+
+### Connection pooling and concurrency
+
+The client supports an optional session pool and concurrency limit. Construct with:
+
+```java
+LimeSurveyClient client = new LimeSurveyClient(
+    url, user, pass,           // credentials
+    autoReleaseSession,         // false for pooling
+    sessionPoolSize,            // number of pooled sessions (0 disables)
+    maxConcurrentRequests       // concurrency limit
+);
+```
+
+**Example for backend reuse:**
+```java
+// Keeps up to 5 pooled sessions and allows 10 concurrent requests
+new LimeSurveyClient(url, user, pass, false, 5, 10)
+```
+
+- Call `client.close()` to release pooled sessions (they will call `release_session_key` against the server).
+- When pooling is enabled and `autoReleaseSession=false`, sessions are returned to the pool for reuse.
+- If `autoReleaseSession=true` and pooling enabled, sessions are invalidated after each use.
+
+### Notes for web backends
+
+- Create one shared `LimeSurveyClient` per host+credentials with pooling enabled and `autoReleaseSession=false` for best throughput.
 - The client is thread-safe; use shared instances across threads.
 
-Implemented RPCs
-- copy_survey, get_survey_properties, set_survey_properties
+## Implemented RPCs
 
-Testing
-- Unit tests: mvn -DskipTests=false -Dtest=*Test test
-- Integration tests (Testcontainers, IT): mvn verify (Failsafe ejecuta los *IT.java)
+- `copy_survey`
+- `get_survey_properties`
+- `set_survey_properties`
 
-CI / Recomendaciones
+## Testing
+
+### Unit tests
+
+```bash
+mvn -DskipTests=false -Dtest=*Test test
+```
+
+### Integration tests
+
+```bash
+mvn verify
+```
+
+### Docker (Recommended)
+
+```bash
+./limesurvey.sh test:all
+```
+
+See **DOCKER.md** for details.
+
+## CI / Recomendaciones
+
 - Las pruebas de integración usan Testcontainers y están gestionadas por Failsafe.
 - Ajustar timeouts en pom.xml para entornos CI lentos.
 - Considerar publicar artefacto en un repositorio Maven para reutilización.
-
-
+- Para Docker: usar docker-compose para tests locales y CI/CD

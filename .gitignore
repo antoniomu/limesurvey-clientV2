@@ -2,3 +2,25 @@ target/
 *.log
 .idea/
 *.iml
+
+# Docker volumes and data
+limesurvey-db-data/
+limesurvey-upload/
+limesurvey-config/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+
+# Docker-related
+docker-compose.override.yml
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

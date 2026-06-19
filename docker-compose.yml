@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # LimeSurvey database
+  limesurvey-db:
+    image: mysql:8.0
+    container_name: limesurvey-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: limesurvey
+      MYSQL_USER: limesurvey
+      MYSQL_PASSWORD: limesurvey123
+    ports:
+      - "3306:3306"
+    volumes:
+      - limesurvey-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 5s
+
+  # LimeSurvey application (change LIMESURVEY_VERSION to 7 for v7)
+  limesurvey:
+    image: martialblog/limesurvey:6-apache
+    container_name: limesurvey-app
+    environment:
+      DB_TYPE: mysql
+      DB_HOST: limesurvey-db
+      DB_PORT: 3306
+      DB_NAME: limesurvey
+      DB_USERNAME: limesurvey
+      DB_PASSWORD: limesurvey123
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: admin123
+      ADMIN_NAME: Administrator
+      ADMIN_EMAIL: admin@limesurvey.local
+      LIMESURVEY_URL_FORMAT: "http://localhost"
+    ports:
+      - "80:80"
+    depends_on:
+      limesurvey-db:
+        condition: service_healthy
+    volumes:
+      - limesurvey-upload:/app/upload
+      - limesurvey-config:/app/application/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      timeout: 10s
+      retries: 10
+      interval: 5s
+
+volumes:
+  limesurvey-db-data:
+  limesurvey-upload:
+  limesurvey-config:
