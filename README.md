@@ -21,7 +21,8 @@ Usage (example snippets)
 - Web-backend / reuse session (autoReleaseSession = false): login once, reuse session across requests, logout when done.
 
     LimeSurveyClient shared = new LimeSurveyClient(url, user, pass, false);
-    try {n        shared.login();
+    try {
+n        shared.login();
         shared.getSurveyProperties(1, List.of("title"));
     } finally {
         shared.logout();
@@ -53,7 +54,6 @@ Implemented RPCs
 Testing
 - Unit tests: mvn -DskipTests=false -Dtest=*Test test
 - Integration tests (Testcontainers, IT): mvn verify (Failsafe ejecuta los *IT.java)
-  * Requiere Docker. Si Docker no está disponible los IT fallarán.
 
 CI / Recomendaciones
 - Las pruebas de integración usan Testcontainers y están gestionadas por Failsafe.
